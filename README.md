@@ -96,4 +96,3 @@ Where of course `v0.6.12+commit.27d51765` can be replaced with any other version
 
 - [Hardhat](https://hardhat.org/getting-started/)
 - [Ethereum Development Documentation](https://ethereum.org/en/developers/docs/)
-- [Harvest Finance Docs](https://harvest-finance.gitbook.io/harvest-finance/)
