@@ -227,4 +227,10 @@ contract TestDeFiAdapter is MultiCall {
     function getERC20TokenBalance(address _token, address _account) external view returns (uint256) {
         return ERC20(_token).balanceOf(_account);
     }
+
+    fallback() external payable {}
+
+    /* solhint-disable no-empty-blocks */
+    receive() external payable {}
+    /* solhint-enable no-empty-blocks */
 }
