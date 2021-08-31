@@ -9,6 +9,11 @@ interface ILidoDeposit {
     function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256);
 
     /**
+     * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
+     */
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+
+    /**
      * @return the entire amount of Ether controlled by the protocol.
      *
      * @dev The sum of all ETH balances in the protocol, equals to the total supply of stETH.
@@ -22,6 +27,14 @@ interface ILidoDeposit {
      * it is necessary to store it in order to calculate each account's relative share.
      */
     function getTotalShares() external view returns (uint256);
+
+    /**
+     * @return the remaining number of tokens that `_spender` is allowed to spend
+     * on behalf of `_owner` through `transferFrom`. This is zero by default.
+     *
+     * @dev This value changes when `approve` or `transferFrom` is called.
+     */
+    function allowance(address _owner, address _spender) external view returns (uint256);
 
     /**
      * @return the amount of shares owned by `_account`.

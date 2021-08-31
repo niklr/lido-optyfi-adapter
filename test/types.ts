@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Fixture } from "ethereum-waffle";
-import { TestDeFiAdapter } from "../typechain/TestDeFiAdapter";
+import { LidoFinanceAdapter, TestDeFiAdapter } from "../typechain";
 
 export interface Signers {
   admin: SignerWithAddress;
@@ -27,6 +27,7 @@ export interface LiquidityPool {
 
 declare module "mocha" {
   export interface Context {
+    lidoFinanceAdapter: LidoFinanceAdapter;
     testDeFiAdapter: TestDeFiAdapter;
     loadFixture: <T>(fixture: Fixture<T>) => Promise<T>;
     signers: Signers;

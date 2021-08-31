@@ -26,8 +26,11 @@ import { IAdapter } from "../interfaces/opty/defiAdapters/IAdapter.sol";
 contract LidoFinanceAdapter is IAdapter {
     using SafeMath for uint256;
 
+    // https://github.com/curvefi/curve-contract/tree/master/contracts/pools/steth
+    address public constant curveStableSwapStEth = address(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
+
     // Lido and stETH token proxy
-    address public constant LidoTokenProxy = address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+    address public constant lidoTokenProxy = address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
     /**
      * @notice Wrapped liquid staked Ether 2.0
@@ -35,9 +38,9 @@ contract LidoFinanceAdapter is IAdapter {
      * The balance of a wstETH token holder only changes on transfers, unlike the balance of stETH
      * that is also changed when oracles report staking rewards, penalties, and slashings.
      */
-    address public constant WstETHToken = address(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+    address public constant wstETHToken = address(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
 
-    address public constant UnderlyingToken = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    address public constant underlyingToken = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     /**
      * @inheritdoc IAdapter
@@ -69,7 +72,7 @@ contract LidoFinanceAdapter is IAdapter {
      */
     function getUnderlyingTokens(address, address) public view override returns (address[] memory _underlyingTokens) {
         _underlyingTokens = new address[](1);
-        _underlyingTokens[0] = UnderlyingToken;
+        _underlyingTokens[0] = underlyingToken;
     }
 
     /**
@@ -145,9 +148,28 @@ contract LidoFinanceAdapter is IAdapter {
         address payable,
         address[] memory,
         address,
-        uint256
-    ) public view override returns (bytes[] memory) {
-        revert("NOT_IMPLEMENTED_YET");
+        uint256 _amount
+    ) public view override returns (bytes[] memory _codes) {
+        if (_amount > 0) {
+            uint256 pooledEthAmount = ILidoDeposit(_getLidoToken()).getPooledEthByShares(_amount);
+            _codes = new bytes[](2);
+            _codes[0] = abi.encode(
+                _getLidoToken(),
+                0,
+                abi.encodeWithSignature("approve(address,uint256)", curveStableSwapStEth, pooledEthAmount)
+            );
+            _codes[1] = abi.encode(
+                curveStableSwapStEth,
+                0,
+                abi.encodeWithSignature(
+                    "exchange(int128,int128,uint256,uint256)",
+                    1, // i = Index value for the coin to send
+                    0, // j = Index value of the coin to receive
+                    pooledEthAmount, // Amount of `i` being exchanged
+                    calculateMinAmount(pooledEthAmount) // Minimum amount of `j` to receive
+                )
+            );
+        }
     }
 
     /**
@@ -216,12 +238,16 @@ contract LidoFinanceAdapter is IAdapter {
         return _getLidoToken();
     }
 
-    function getSharesByPooledEth(uint256 _ethAmount) public view returns (uint256) {
-        return ILidoDeposit(_getLidoToken()).getSharesByPooledEth(_ethAmount);
+    function calculateMinAmount(uint256 _amount) public pure returns (uint256) {
+        if (_amount > 0) {
+            uint256 slippage = _amount.mul(5).div(1000); // 0.5%
+            _amount = _amount.sub(slippage);
+        }
+        return _amount;
     }
 
     function _getLidoToken() internal pure returns (address) {
-        return LidoTokenProxy;
-        //return IBeacon(LidoTokenProxy).implementation();
+        return lidoTokenProxy;
+        //return IBeacon(lidoTokenProxy).implementation();
     }
 }
