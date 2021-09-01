@@ -83,22 +83,19 @@ contract LidoFinanceAdapter is IAdapter {
         address,
         uint256 _depositAmount
     ) public view override returns (uint256) {
-        return _depositAmount;
+        return ILidoDeposit(_getLidoToken()).getSharesByPooledEth(_depositAmount);
     }
 
     /**
      * @inheritdoc IAdapter
      */
     function calculateRedeemableLPTokenAmount(
-        address payable _vault,
-        address _underlyingToken,
-        address _liquidityPool,
+        address payable,
+        address,
+        address,
         uint256 _redeemAmount
     ) public view override returns (uint256 _amount) {
-        uint256 _liquidityPoolTokenBalance = getLiquidityPoolTokenBalance(_vault, _underlyingToken, _liquidityPool);
-        uint256 _balanceInToken = getAllAmountInToken(_vault, _underlyingToken, _liquidityPool);
-        // can have unintentional rounding errors
-        _amount = (_liquidityPoolTokenBalance.mul(_redeemAmount)).div(_balanceInToken).add(1);
+        return ILidoDeposit(_getLidoToken()).getPooledEthByShares(_redeemAmount);
     }
 
     /**
