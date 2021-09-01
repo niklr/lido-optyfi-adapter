@@ -31,7 +31,7 @@ describe("Unit tests", function () {
       await deployContract(this.signers.deployer, testDeFiAdapterArtifact, [], getOverrideOptions())
     );
 
-    // fund the TestDeFiAdapter with x tokens
+    // fund the TestDeFiAdapter with 10 tokens
     await this.signers.admin.sendTransaction({
       to: this.testDeFiAdapter.address,
       value: hre.ethers.utils.parseEther("10"),

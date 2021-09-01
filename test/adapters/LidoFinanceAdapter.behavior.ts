@@ -9,9 +9,6 @@ chai.use(solidity);
 
 export function shouldBehaveLikeLidoFinanceAdapter(token: string, pool: PoolItem): void {
   it(`should deposit ${token} and receive st${token} in ${token} pool of Lido Finance`, async function () {
-    const curveStableSwapStEth = "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022";
-    // lpToken instance
-    const lpTokenInstance = await hre.ethers.getContractAt("IERC20", pool.lpToken);
     // lido finance's deposit vault instance
     const lidoDepositInstance = await hre.ethers.getContractAt("ILidoDeposit", pool.pool);
     const balanceBeforeDeposit = await hre.ethers.provider.getBalance(this.testDeFiAdapter.address);
@@ -40,9 +37,6 @@ export function shouldBehaveLikeLidoFinanceAdapter(token: string, pool: PoolItem
     // 1.2 assert whether the underlying token balance is as expected or not after deposit
     const actualBalanceAfterDeposit1 = await hre.ethers.provider.getBalance(this.testDeFiAdapter.address);
     expect(actualBalanceAfterDeposit1).to.be.eq(0);
-    const actualBalanceAfterDeposit2 = await lpTokenInstance.balanceOf(this.testDeFiAdapter.address);
-    const expectedBalanceAfterDeposit = BigNumber.from(balanceBeforeDeposit).sub(1);
-    expect(actualBalanceAfterDeposit2).to.be.eq(expectedBalanceAfterDeposit);
     // 1.3 assert whether the amount in token is as expected or not after depositing
     const actualAmountInTokenAfterDeposit = await this.lidoFinanceAdapter.getAllAmountInToken(
       this.testDeFiAdapter.address,
@@ -84,10 +78,7 @@ export function shouldBehaveLikeLidoFinanceAdapter(token: string, pool: PoolItem
       this.lidoFinanceAdapter.address,
       getOverrideOptions(),
     );
-    const actualAllowanceAfterWithdraw = await lidoDepositInstance.allowance(
-      this.testDeFiAdapter.address,
-      curveStableSwapStEth,
-    );
+    const actualAllowanceAfterWithdraw = await lidoDepositInstance.allowance(this.testDeFiAdapter.address, pool.swap);
     expect(actualAllowanceAfterWithdraw).to.be.eq(0);
     // 2.1 assert whether lpToken balance is as expected or not after withdraw
     const actualLPTokenBalanceAfterWithdraw = await this.lidoFinanceAdapter.getLiquidityPoolTokenBalance(
@@ -97,30 +88,42 @@ export function shouldBehaveLikeLidoFinanceAdapter(token: string, pool: PoolItem
     );
     const expectedLPTokenBalanceAfterWithdraw = await lidoDepositInstance.sharesOf(this.testDeFiAdapter.address);
     expect(actualLPTokenBalanceAfterWithdraw).to.be.eq(expectedLPTokenBalanceAfterWithdraw);
-    expect(actualLPTokenBalanceAfterWithdraw).to.be.eq(1);
     // 2.2 assert whether underlying token balance is as expected or not after withdraw
-    const expectedMinAmount = await this.lidoFinanceAdapter.calculateMinAmount(balanceBeforeDeposit);
-    const actualBalanceAfterWithdraw1 = await hre.ethers.provider.getBalance(this.testDeFiAdapter.address);
-    const actualBalanceAfterWithdraw2 = await lpTokenInstance.balanceOf(this.testDeFiAdapter.address);
-    expect(actualBalanceAfterWithdraw1).to.be.lt(balanceBeforeDeposit);
-    expect(actualBalanceAfterWithdraw1).to.be.gte(expectedMinAmount);
-    expect(actualBalanceAfterWithdraw2).to.be.eq(1);
+    const expectedMinAmount = await this.lidoFinanceAdapter.calculateMinAmountAfterSwap(balanceBeforeDeposit);
+    const actualBalanceAfterWithdraw = await hre.ethers.provider.getBalance(this.testDeFiAdapter.address);
+    expect(actualBalanceAfterWithdraw).to.be.lt(balanceBeforeDeposit);
+    expect(actualBalanceAfterWithdraw).to.be.gte(expectedMinAmount);
+  });
+
+  it(`should return the reward token and assert that staking is not enabled`, async function () {
+    // assert reward token
+    const actualRewardToken = await this.lidoFinanceAdapter.getRewardToken(pool.pool);
+    expect(actualRewardToken).to.be.eq(pool.rewardTokens[0]);
+    // assert cannot stake
+    const actualCanStake = await this.lidoFinanceAdapter.canStake(pool.pool);
+    expect(actualCanStake).to.be.false;
+  });
+
+  it(`should check correctness of view function return values`, async function () {
+    const underlyingToken = pool.tokens[0];
     // assert underlying token
     const actualUnderlyingTokens = await this.lidoFinanceAdapter.getUnderlyingTokens(pool.pool, underlyingToken);
     expect(actualUnderlyingTokens[0]).to.be.eq(underlyingToken);
     // assert liquidity pool token
     const actualLiquidityPoolToken = await this.lidoFinanceAdapter.getLiquidityPoolToken(underlyingToken, pool.pool);
     expect(actualLiquidityPoolToken).to.be.eq(pool.lpToken);
-    // assert reward token
-    const actualRewardToken = await this.lidoFinanceAdapter.getRewardToken(pool.pool);
-    expect(actualRewardToken).to.be.eq(pool.lpToken);
-    // assert can stake
-    const actualCanStake = await this.lidoFinanceAdapter.canStake(pool.pool);
-    expect(actualCanStake).to.be.false;
-  });
-  it(`should calculate minimum amount when swapping from st${token} to ${token} in ${token} pool of Lido Finance`, async function () {
-    const amount = 1234;
-    const actualMinAmount = await this.lidoFinanceAdapter.calculateMinAmount(amount);
-    expect(actualMinAmount).to.be.eq(1228);
+    // assert redeemable amount is not sufficient
+    const actualLPTokenBalance = await this.lidoFinanceAdapter.getLiquidityPoolTokenBalance(
+      this.testDeFiAdapter.address,
+      this.testDeFiAdapter.address, // placeholder of type address
+      pool.pool,
+    );
+    const actualIsRedeemableAmountSufficient = await this.lidoFinanceAdapter.isRedeemableAmountSufficient(
+      this.testDeFiAdapter.address,
+      underlyingToken,
+      pool.pool,
+      actualLPTokenBalance.add(1),
+    );
+    expect(actualIsRedeemableAmountSufficient).to.be.eq(false);
   });
 }

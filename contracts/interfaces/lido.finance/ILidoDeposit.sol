@@ -2,6 +2,12 @@
 
 pragma solidity ^0.6.12;
 
+/**
+ * @title Interface for the Lido liquid staking pool
+ * @author niklr
+ * @notice Interface with minimal functions needed by a Lido adapter implementation
+ * @dev Source: https://github.com/lidofinance/lido-dao/blob/master/contracts/0.4.24
+ */
 interface ILidoDeposit {
     /**
      * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
