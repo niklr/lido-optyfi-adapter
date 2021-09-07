@@ -8,6 +8,7 @@ import "solidity-coverage";
 if (!process.env.SKIP_LOAD) {
   require("./tasks/accounts");
   require("./tasks/clean");
+  require("./tasks/deployers");
 }
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -25,10 +26,20 @@ const mnemonic: string | undefined = process.env.MNEMONIC;
 if (!mnemonic) {
   throw new Error("Please set your MNEMONIC in a .env file");
 }
+// Ensure that we have private key set as an environment variable
+const privateKey = process.env.PRIVATE_KEY;
+if (!privateKey) {
+  throw new Error("Please set your PRIVATE_KEY in a .env file");
+}
 // Ensure that we have archive mainnet node URL set as an environment variable
 const archiveMainnetNodeURL: string | undefined = process.env.ARCHIVE_MAINNET_NODE_URL;
 if (!archiveMainnetNodeURL) {
   throw new Error("Please set your ARCHIVE_MAINNET_NODE_URL in a .env file");
+}
+// Ensure that we have rinkeby node URL set as an environment variable
+const rinkebyNodeURL: string | undefined = process.env.RINKEBY_NODE_URL;
+if (!rinkebyNodeURL) {
+  throw new Error("Please set your RINKEBY_NODE_URL in a .env file");
 }
 
 ////////////////////////////////////////////////////////////
@@ -53,6 +64,10 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
       hardfork: "london",
+    },
+    rinkeby: {
+      url: rinkebyNodeURL,
+      accounts: [`0x${privateKey}`],
     },
   },
   paths: {
