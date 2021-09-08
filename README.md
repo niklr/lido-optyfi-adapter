@@ -5,6 +5,7 @@
 The integration of Lido's Ethereum staking pool using OptyFi's DeFi Adapter interface. With this integration, OptyFi users should be able to deposit their ETH into OptyFi's ETH vault which will in turn stake them into the Lido protocol to receive yield-bearing stETH tokens.
 
 Video walkthrough: [https://www.youtube.com/watch?v=-0ZPnGmrmJY](https://www.youtube.com/watch?v=-0ZPnGmrmJY)
+
 Deployment address on Rinkeby: [0x289cd4c7B1cbeAC268dB5c62Be89bF2f1d93AA84](https://rinkeby.etherscan.io/address/0x289cd4c7B1cbeAC268dB5c62Be89bF2f1d93AA84)
 
 ### Prerequisites
